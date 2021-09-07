@@ -5,10 +5,17 @@ type Semaphore interface {
 	Wait()
 }
 
-func NewSemaphore(i int) Semaphore {
-	return &semaphore{
-		ch: make(chan int, i),
+const signal = 1
+const size = 10000
+
+func NewSemaphore(v int) Semaphore {
+	s := &semaphore{
+		ch: make(chan int, size),
 	}
+	for i := 0; i < v; i++ {
+		s.ch <- signal
+	}
+	return s
 }
 
 type semaphore struct {
@@ -16,7 +23,7 @@ type semaphore struct {
 }
 
 func (s *semaphore) Signal() {
-	s.ch <- 1
+	s.ch <- signal
 }
 
 func (s *semaphore) Wait() {
