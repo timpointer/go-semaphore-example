@@ -41,12 +41,29 @@ func Example_3_3_Rendezvous() {
 		Statement("a2")
 	}()
 
-	time.Sleep(1 * time.Second)
+	time.Sleep(time.Second)
 	// Output:
 	// statement a1
 	// statement b1
 	// statement a2
 	// statement b2
+}
+
+func Example_3_4_Mutual() {
+	count := 0
+	locker := NewLocker()
+
+	for i := 0; i < 1000; i++ {
+		go func() {
+			locker.Lock()
+			count = count + 1
+			locker.Unlock()
+		}()
+	}
+	time.Sleep(time.Second)
+	fmt.Println(count)
+	// Output:
+	// 1000
 }
 
 func Statement(i string) {
