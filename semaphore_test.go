@@ -2,6 +2,7 @@ package go_semaphore_example
 
 import (
 	"fmt"
+	"testing"
 	"time"
 )
 
@@ -64,6 +65,23 @@ func Example_3_4_Mutual() {
 	fmt.Println(count)
 	// Output:
 	// 1000
+}
+
+func Test_3_5_Multiplex(t *testing.T) {
+	// five tokens
+	tokens := NewSemaphore(5)
+
+	for i := 0; i < 1000; i++ {
+		// only 5 goroutines can run concurrency
+		go func(num int) {
+			tokens.Wait()
+			fmt.Printf("%v num %d\n", time.Now().Format(time.Stamp), num)
+			time.Sleep(time.Second)
+			tokens.Signal()
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
 }
 
 func Statement(i string) {
