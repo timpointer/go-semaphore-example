@@ -2,6 +2,7 @@ package go_semaphore_example
 
 type Semaphore interface {
 	Signal()
+	MultiSignal(n int)
 	Wait()
 }
 
@@ -20,6 +21,12 @@ func NewSemaphore(v int) Semaphore {
 
 type semaphore struct {
 	ch chan int
+}
+
+func (s *semaphore) MultiSignal(n int) {
+	for i := 0; i < n; i++ {
+		s.Signal()
+	}
 }
 
 func (s *semaphore) Signal() {

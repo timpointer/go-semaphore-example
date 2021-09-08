@@ -116,7 +116,7 @@ func Test_3_6_Barrier(t *testing.T) {
 			sleep(1)
 
 			locker.Lock()
-			count++
+			count += 1
 			if count == n {
 				barrier.Signal()
 			}
@@ -136,7 +136,7 @@ func Test_3_7_Reusable_Barrier(t *testing.T) {
 	count := 0
 	locker := NewLocker()
 	turnstile := NewSemaphore(0)
-	turnstile2 := NewSemaphore(1)
+	turnstile2 := NewSemaphore(1) // hit: init one single
 
 	for i := 0; i < n; i++ {
 		go func(num int) {
@@ -145,7 +145,7 @@ func Test_3_7_Reusable_Barrier(t *testing.T) {
 				sleep(1)
 
 				locker.Lock()
-				count++
+				count += 1
 				if count == n {
 					turnstile2.Wait()
 					turnstile.Signal()
@@ -157,7 +157,7 @@ func Test_3_7_Reusable_Barrier(t *testing.T) {
 				fmt.Printf("%v num %d critical point\n", now(), num)
 
 				locker.Lock()
-				count--
+				count -= 1
 				if count == 0 {
 					turnstile.Wait()
 					turnstile2.Signal()
@@ -165,6 +165,44 @@ func Test_3_7_Reusable_Barrier(t *testing.T) {
 				locker.Unlock()
 				turnstile2.Wait()
 				turnstile2.Signal()
+
+			}
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
+}
+
+func Test_3_7_6_Preload_turnstile(t *testing.T) {
+	n := 5
+	count := 0
+	locker := NewLocker()
+	turnstile := NewSemaphore(0)
+	turnstile2 := NewSemaphore(0)
+
+	for i := 0; i < n; i++ {
+		go func(num int) {
+			for {
+				fmt.Printf("%v num %d\n", now(), num)
+				sleep(1)
+
+				locker.Lock()
+				count += 1
+				if count == n {
+					turnstile.MultiSignal(n)
+				}
+				locker.Unlock()
+				turnstile.Wait()
+
+				fmt.Printf("%v num %d critical point\n", now(), num)
+
+				locker.Lock()
+				count -= 1
+				if count == 0 {
+					turnstile2.MultiSignal(n)
+				}
+				locker.Unlock()
+				turnstile2.Wait()
 
 			}
 		}(i)
