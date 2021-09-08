@@ -211,6 +211,29 @@ func Test_3_7_6_Preload_turnstile(t *testing.T) {
 	time.Sleep(time.Hour)
 }
 
+func Test_3_7_7_Barrier_objects(t *testing.T) {
+	n := 5
+	barrier := NewBarrier(n)
+
+	for i := 0; i < n; i++ {
+		go func(num int) {
+			for {
+				fmt.Printf("%v num %d\n", now(), num)
+				sleep(5)
+
+				barrier.Wait()
+
+				fmt.Printf("%v num %d critical point\n", now(), num)
+
+				barrier.Wait()
+
+			}
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
+}
+
 func now() string {
 	return time.Now().Format(time.Stamp)
 }
