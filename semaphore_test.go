@@ -2,6 +2,7 @@ package go_semaphore_example
 
 import (
 	"fmt"
+	"sync"
 	"testing"
 	"time"
 )
@@ -82,6 +83,59 @@ func Test_3_5_Multiplex(t *testing.T) {
 	}
 
 	time.Sleep(time.Hour)
+}
+
+func Test_3_6_Barrier_implement_with_waitGroup(t *testing.T) {
+	group := &sync.WaitGroup{}
+	group.Add(5)
+
+	for i := 0; i < 5; i++ {
+		go func(num int) {
+			fmt.Printf("%v num %d\n", now(), num)
+			time.Sleep(time.Second)
+			group.Done()
+			group.Wait()
+			fmt.Printf("%v num %d critical point\n", now(), num)
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
+}
+
+// compare with waitGroup implementation,which is simpler?
+func Test_3_6_Barrier(t *testing.T) {
+	count := 0
+	locker := NewLocker()
+	barrier := NewSemaphore(0)
+
+	for i := 0; i < 5; i++ {
+		go func(num int) {
+			fmt.Printf("%v num %d\n", now(), num)
+			sleep(1)
+
+			locker.Lock()
+			count++
+			locker.Unlock()
+
+			if count == 4 {
+				barrier.Signal()
+			}
+			barrier.Wait()
+			barrier.Signal()
+
+			fmt.Printf("%v num %d critical point\n", now(), num)
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
+}
+
+func now() string {
+	return time.Now().Format(time.Stamp)
+}
+
+func sleep(second int) {
+	time.Sleep(time.Duration(second) * time.Second)
 }
 
 func Statement(i string) {
