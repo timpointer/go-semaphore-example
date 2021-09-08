@@ -86,10 +86,11 @@ func Test_3_5_Multiplex(t *testing.T) {
 }
 
 func Test_3_6_Barrier_implement_with_waitGroup(t *testing.T) {
+	n := 5
 	group := &sync.WaitGroup{}
-	group.Add(5)
+	group.Add(n)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < n; i++ {
 		go func(num int) {
 			fmt.Printf("%v num %d\n", now(), num)
 			time.Sleep(time.Second)
@@ -104,26 +105,68 @@ func Test_3_6_Barrier_implement_with_waitGroup(t *testing.T) {
 
 // compare with waitGroup implementation,which is simpler?
 func Test_3_6_Barrier(t *testing.T) {
+	n := 5
 	count := 0
 	locker := NewLocker()
 	barrier := NewSemaphore(0)
 
-	for i := 0; i < 5; i++ {
+	for i := 0; i < n; i++ {
 		go func(num int) {
 			fmt.Printf("%v num %d\n", now(), num)
 			sleep(1)
 
 			locker.Lock()
 			count++
-			locker.Unlock()
-
-			if count == 4 {
+			if count == n {
 				barrier.Signal()
 			}
+			locker.Unlock()
 			barrier.Wait()
 			barrier.Signal()
 
 			fmt.Printf("%v num %d critical point\n", now(), num)
+		}(i)
+	}
+
+	time.Sleep(time.Hour)
+}
+
+func Test_3_7_Reusable_Barrier(t *testing.T) {
+	n := 5
+	count := 0
+	locker := NewLocker()
+	turnstile := NewSemaphore(0)
+	turnstile2 := NewSemaphore(1)
+
+	for i := 0; i < n; i++ {
+		go func(num int) {
+			for {
+				fmt.Printf("%v num %d\n", now(), num)
+				sleep(1)
+
+				locker.Lock()
+				count++
+				if count == n {
+					turnstile2.Wait()
+					turnstile.Signal()
+				}
+				locker.Unlock()
+				turnstile.Wait()
+				turnstile.Signal()
+
+				fmt.Printf("%v num %d critical point\n", now(), num)
+
+				locker.Lock()
+				count--
+				if count == 0 {
+					turnstile.Wait()
+					turnstile2.Signal()
+				}
+				locker.Unlock()
+				turnstile2.Wait()
+				turnstile2.Signal()
+
+			}
 		}(i)
 	}
 
